@@ -1,6 +1,6 @@
 # PROJ-1: Multi-Tenant Onboarding (Vereinsregistrierung & Auth)
 
-## Status: Planned
+## Status: In Review
 **Created:** 2026-03-01
 **Last Updated:** 2026-03-01
 

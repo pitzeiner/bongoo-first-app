@@ -12,7 +12,7 @@
 
 | ID | Feature | Status | Spec | Created |
 |----|---------|--------|------|---------|
-| PROJ-1 | Multi-Tenant Onboarding (Vereinsregistrierung & Auth) | In Progress | [PROJ-1-multi-tenant-onboarding.md](PROJ-1-multi-tenant-onboarding.md) | 2026-03-01 |
+| PROJ-1 | Multi-Tenant Onboarding (Vereinsregistrierung & Auth) | In Review | [PROJ-1-multi-tenant-onboarding.md](PROJ-1-multi-tenant-onboarding.md) | 2026-03-01 |
 | PROJ-2 | Event Setup (Fest anlegen & konfigurieren) | Planned | [PROJ-2-event-setup.md](PROJ-2-event-setup.md) | 2026-03-01 |
 | PROJ-3 | Artikel- & Kategorieverwaltung | Planned | [PROJ-3-artikel-kategorien.md](PROJ-3-artikel-kategorien.md) | 2026-03-01 |
 | PROJ-4 | Terminal- & Stationskonfiguration | Planned | [PROJ-4-terminal-stationskonfiguration.md](PROJ-4-terminal-stationskonfiguration.md) | 2026-03-01 |
