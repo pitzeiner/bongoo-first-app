@@ -48,11 +48,11 @@ export async function POST(request: NextRequest) {
     const result = await jwtVerify(parsed.data.token, secret, { algorithms: ['HS256'] })
     payload = result.payload as typeof payload
   } catch {
-    return NextResponse.json({ redirectTo: null }, { status: 200 })
+    return NextResponse.json({ error: 'Token ungültig oder abgelaufen' }, { status: 401 })
   }
 
   if (!payload.jti || !payload.organizationId || !payload.terminalRole || !payload.tokenId) {
-    return NextResponse.json({ redirectTo: null }, { status: 200 })
+    return NextResponse.json({ error: 'Token ungültig' }, { status: 401 })
   }
 
   // Service Role für sicheres Lesen ohne RLS-Kontext (kein eingeloggter User)
@@ -76,11 +76,11 @@ export async function POST(request: NextRequest) {
     .single()
 
   if (!tokenRecord || tokenRecord.is_revoked) {
-    return NextResponse.json({ redirectTo: null }, { status: 200 })
+    return NextResponse.json({ error: 'Token nicht gefunden oder widerrufen' }, { status: 401 })
   }
 
   if (new Date(tokenRecord.expires_at) < new Date()) {
-    return NextResponse.json({ redirectTo: null }, { status: 200 })
+    return NextResponse.json({ error: 'Token abgelaufen' }, { status: 401 })
   }
 
   const redirectTo = ROLE_REDIRECT[tokenRecord.terminal_role] ?? '/terminal/expired'
