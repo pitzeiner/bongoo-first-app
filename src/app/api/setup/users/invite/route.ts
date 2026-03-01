@@ -64,10 +64,40 @@ export async function POST(request: NextRequest) {
   )
 
   if (inviteError) {
-    const message = inviteError.message.includes('already been registered')
-      ? 'Diese E-Mail-Adresse ist bereits registriert'
-      : 'Einladung konnte nicht gesendet werden'
-    return NextResponse.json({ error: message }, { status: 400 })
+    if (inviteError.message.includes('already been registered')) {
+      // Prüfen ob der bestehende User zur eigenen Organisation gehört
+      const { data: listData } = await adminSupabase.auth.admin.listUsers({ perPage: 1000 })
+      const existingUser = listData?.users.find(
+        (u) => u.email?.toLowerCase() === email.toLowerCase()
+      )
+
+      if (existingUser) {
+        // RLS-geschützte Abfrage: gibt nur Treffer zurück wenn User in eigener Org ist
+        const { data: existingProfile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', existingUser.id)
+          .single()
+
+        if (existingProfile) {
+          // User gehört zur eigenen Org → Passwort-Reset-Link senden (Re-Invite)
+          const { error: resetError } = await adminSupabase.auth.resetPasswordForEmail(email, {
+            redirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/auth/callback?next=/auth/update-password`,
+          })
+          if (!resetError) {
+            return NextResponse.json({ success: true, action: 'reset_sent' })
+          }
+        }
+      }
+
+      // User existiert nicht in dieser Org
+      return NextResponse.json(
+        { error: 'Diese E-Mail-Adresse ist bereits in einem anderen Verein registriert' },
+        { status: 400 }
+      )
+    }
+
+    return NextResponse.json({ error: 'Einladung konnte nicht gesendet werden' }, { status: 400 })
   }
 
   // Profil für den eingeladenen User erstellen (setup_user Rolle)
