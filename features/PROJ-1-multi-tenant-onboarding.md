@@ -24,6 +24,7 @@ Das System kennt **zwei grundlegend verschiedene Auth-Mechanismen**:
 - Gratis-Bons erstellen (Freibon für bestimmte Artikel)
 - Kellner abrechnen (Bestellübersicht pro Kellner einsehen)
 - Artikel-Preise einsehen (nicht ändern)
+- QR-Codes für Terminals / Kellner generieren und ausdrucken
 
 ### Setup-User — verbotene Aktionen
 - Feste anlegen, bearbeiten oder löschen
@@ -34,7 +35,7 @@ Das System kennt **zwei grundlegend verschiedene Auth-Mechanismen**:
 - Tagesabschluss durchführen
 
 ### QR-Code Auth (für operative Rollen)
-- Admin generiert in der Setup-App einen QR-Code pro Terminal/Kellner
+- Admin **und Setup-User** generieren in der Setup-App einen QR-Code pro Terminal/Kellner
 - QR-Code wird via Bondrucker (ESC/POS) ausgedruckt und an Mitarbeiter übergeben
 - Mitarbeiter scannt den QR-Code mit einem beliebigen Gerät (Smartphone/Tablet/PC)
 - Browser öffnet direkt die richtige App (Kassa / Küche / Kellner), **kein Login-Formular**
@@ -56,9 +57,10 @@ Das System kennt **zwei grundlegend verschiedene Auth-Mechanismen**:
 - Als **Setup-User** möchte ich Artikel als ausverkauft markieren, damit Kassaterminals sie nicht mehr anzeigen.
 - Als **Setup-User** möchte ich Gratis-Bons erstellen (Artikel + Anzahl, ohne Zahlung), damit z.B. Ehrengäste bedient werden können.
 - Als **Setup-User** möchte ich die Bestellübersicht pro Kellner einsehen, um Abrechnungen zu machen.
+- Als **Setup-User** möchte ich QR-Codes für Terminals / Kellner generieren und ausdrucken, damit ich das auch ohne Admin-Hilfe erledigen kann.
 
 ### Operative Nutzer (QR-Code)
-- Als **Admin** möchte ich für jedes Terminal / jeden Kellner einen QR-Code generieren und ausdrucken können.
+- Als **Admin oder Setup-User** möchte ich für jedes Terminal / jeden Kellner einen QR-Code generieren und ausdrucken können.
 - Als **Kassier / Küchenmitarbeiter / Kellner** möchte ich durch Scannen eines QR-Codes sofort Zugang zur richtigen App bekommen, ohne mich registrieren oder einloggen zu müssen.
 - Als **Admin** möchte ich einen QR-Code (Terminal) deaktivieren können, damit der Zugang sofort entzogen wird.
 
@@ -80,12 +82,13 @@ Das System kennt **zwei grundlegend verschiedene Auth-Mechanismen**:
 - [ ] Setup-User-Aktionen (Ausverkauft, Gratis-Bon) werden mit User-ID protokolliert
 
 ### QR-Code Auth (operative Rollen)
-- [ ] Admin kann in der Setup-App pro Terminal/Kellner einen QR-Code generieren
+- [ ] Admin **und Setup-User** können in der Setup-App pro Terminal/Kellner einen QR-Code generieren
 - [ ] QR-Code enthält ein signiertes Token mit: `terminal_id`, `role`, `event_id`, Ablaufzeit (12h)
 - [ ] QR-Code wird als Druckauftrag an Bondrucker gesendet (Bon-Format mit QR-Code und Terminal-Name)
 - [ ] Scannen des QR-Codes öffnet die richtige App und setzt Session automatisch
 - [ ] Nach Ablauf (12h) wird der QR-Code ungültig → Nutzer wird zur "Abgelaufen"-Seite weitergeleitet
 - [ ] Admin kann QR-Code-Token jederzeit widerrufen (Terminal deaktivieren in PROJ-4)
+- [ ] Setup-User-Aktionen beim QR-Code-Generieren werden mit User-ID protokolliert
 - [ ] Kein Login-Formular, keine E-Mail-Adresse für Kassiere / Küche / Kellner
 
 ### Sicherheit & Isolation
