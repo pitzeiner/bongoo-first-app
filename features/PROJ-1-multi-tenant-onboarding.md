@@ -7,38 +7,110 @@
 ## Dependencies
 - None
 
+## Rollen-Übersicht
+
+Das System kennt **zwei grundlegend verschiedene Auth-Mechanismen**:
+
+| Rolle | Auth-Methode | App-Zugriff |
+|-------|-------------|-------------|
+| `admin` | E-Mail + Passwort | Setup-App (voller Zugriff) |
+| `setup_user` | E-Mail + Passwort (vom Admin angelegt) | Setup-App (eingeschränkt, kein Systemzugriff) |
+| `cashier` | QR-Code (gedruckt via Bondrucker) | Kassaterminal-App |
+| `kitchen` / `bar` | QR-Code (gedruckt via Bondrucker) | Ausgabeterminal-App |
+| `waiter` | QR-Code (gedruckt via Bondrucker) | Kellner-App |
+
+### Setup-User — erlaubte Aktionen
+- Artikel als ausverkauft markieren / reaktivieren
+- Gratis-Bons erstellen (Freibon für bestimmte Artikel)
+- Kellner abrechnen (Bestellübersicht pro Kellner einsehen)
+- Artikel-Preise einsehen (nicht ändern)
+
+### Setup-User — verbotene Aktionen
+- Feste anlegen, bearbeiten oder löschen
+- Artikel, Kategorien, Stationen konfigurieren
+- Andere Benutzer anlegen oder verwalten
+- Vereinsprofil ändern
+- Systemeinstellungen ändern
+- Tagesabschluss durchführen
+
+### QR-Code Auth (für operative Rollen)
+- Admin generiert in der Setup-App einen QR-Code pro Terminal/Kellner
+- QR-Code wird via Bondrucker (ESC/POS) ausgedruckt und an Mitarbeiter übergeben
+- Mitarbeiter scannt den QR-Code mit einem beliebigen Gerät (Smartphone/Tablet/PC)
+- Browser öffnet direkt die richtige App (Kassa / Küche / Kellner), **kein Login-Formular**
+- Der QR-Code enthält ein signiertes, kurzlebiges Token (z.B. JWT, 12 Stunden gültig)
+- Token kann vom Admin jederzeit widerrufen werden (Terminal deaktivieren)
+- **Keine E-Mail-Registrierung für operative Nutzer**
+
 ## User Stories
+
+### Admin
 - Als **Vereins-Admin** möchte ich mich mit E-Mail und Passwort registrieren, damit ich meinen Verein auf der Plattform anlegen kann.
-- Als **Vereins-Admin** möchte ich ein Vereinsprofil anlegen (Name, Logo, Kontaktdaten), damit Kassiere und Mitarbeiter den Verein erkennen.
-- Als **Vereins-Admin** möchte ich mich sicher einloggen und ausloggen können.
-- Als **Vereins-Admin** möchte ich mein Passwort zurücksetzen können, falls ich es vergessen habe.
-- Als **Vereins-Admin** möchte ich weitere Benutzer (Kassiere, Küche, etc.) zu meinem Verein einladen können, damit diese Zugriff auf die richtigen Apps haben.
-- Als **eingeladener Mitarbeiter** möchte ich die Einladung per E-Mail annehmen und ein Passwort setzen können.
+- Als **Vereins-Admin** möchte ich ein Vereinsprofil anlegen (Name, Logo, Kontaktdaten).
+- Als **Vereins-Admin** möchte ich mein Passwort zurücksetzen können.
+- Als **Vereins-Admin** möchte ich weitere Setup-User anlegen (Name + E-Mail), damit diese begrenzt auf das Setup zugreifen können.
+- Als **Vereins-Admin** möchte ich Setup-User sperren oder löschen können.
+
+### Setup-User
+- Als **Setup-User** möchte ich mich mit E-Mail + Passwort einloggen (Zugangsdaten vom Admin erhalten).
+- Als **Setup-User** möchte ich Artikel als ausverkauft markieren, damit Kassaterminals sie nicht mehr anzeigen.
+- Als **Setup-User** möchte ich Gratis-Bons erstellen (Artikel + Anzahl, ohne Zahlung), damit z.B. Ehrengäste bedient werden können.
+- Als **Setup-User** möchte ich die Bestellübersicht pro Kellner einsehen, um Abrechnungen zu machen.
+
+### Operative Nutzer (QR-Code)
+- Als **Admin** möchte ich für jedes Terminal / jeden Kellner einen QR-Code generieren und ausdrucken können.
+- Als **Kassier / Küchenmitarbeiter / Kellner** möchte ich durch Scannen eines QR-Codes sofort Zugang zur richtigen App bekommen, ohne mich registrieren oder einloggen zu müssen.
+- Als **Admin** möchte ich einen QR-Code (Terminal) deaktivieren können, damit der Zugang sofort entzogen wird.
 
 ## Acceptance Criteria
-- [ ] Registrierung mit E-Mail + Passwort funktioniert, Bestätigungsmail wird versendet
-- [ ] Nach Bestätigung kann sich der Admin einloggen
-- [ ] Admin kann Vereinsprofil anlegen: Name (Pflicht), Beschreibung (optional), Logo-Upload (optional)
-- [ ] Admin kann weitere Nutzer per E-Mail einladen
-- [ ] Eingeladene Nutzer können Einladung annehmen und Passwort setzen
-- [ ] Jeder Nutzer ist genau einem Verein zugeordnet (Multi-Tenant-Isolation)
+
+### Admin-Registrierung & Login
+- [ ] Registrierung mit E-Mail + Passwort; Bestätigungsmail wird versendet
+- [ ] Nach Bestätigung kann Admin einloggen und Vereinsprofil anlegen
+- [ ] Vereinsprofil: Name (Pflicht), Beschreibung (optional), Logo-Upload (optional, max. 2 MB)
 - [ ] Passwort-Reset per E-Mail funktioniert
 - [ ] Nicht eingeloggte Nutzer werden auf Login-Seite weitergeleitet
-- [ ] Nutzer verschiedener Vereine haben keinen Zugriff auf gegenseitige Daten (RLS)
+
+### Setup-User-Verwaltung
+- [ ] Admin kann Setup-User anlegen: Name + E-Mail (kein Self-Sign-up)
+- [ ] Neu angelegter Setup-User erhält E-Mail mit temporärem Passwort oder Set-Password-Link
+- [ ] Setup-User kann sich einloggen und Passwort ändern
+- [ ] Admin kann Setup-User sperren (sofortiger Zugriffsentzug) oder löschen
+- [ ] Setup-User sieht in der Setup-App nur die erlaubten Bereiche (eingeschränktes Nav)
+- [ ] Setup-User-Aktionen (Ausverkauft, Gratis-Bon) werden mit User-ID protokolliert
+
+### QR-Code Auth (operative Rollen)
+- [ ] Admin kann in der Setup-App pro Terminal/Kellner einen QR-Code generieren
+- [ ] QR-Code enthält ein signiertes Token mit: `terminal_id`, `role`, `event_id`, Ablaufzeit (12h)
+- [ ] QR-Code wird als Druckauftrag an Bondrucker gesendet (Bon-Format mit QR-Code und Terminal-Name)
+- [ ] Scannen des QR-Codes öffnet die richtige App und setzt Session automatisch
+- [ ] Nach Ablauf (12h) wird der QR-Code ungültig → Nutzer wird zur "Abgelaufen"-Seite weitergeleitet
+- [ ] Admin kann QR-Code-Token jederzeit widerrufen (Terminal deaktivieren in PROJ-4)
+- [ ] Kein Login-Formular, keine E-Mail-Adresse für Kassiere / Küche / Kellner
+
+### Sicherheit & Isolation
+- [ ] Jeder Nutzer (Admin, Setup-User) ist genau einem Verein zugeordnet
+- [ ] RLS: Nutzer verschiedener Vereine haben keinen Zugriff auf gegenseitige Daten
+- [ ] QR-Token kann serverseitig validiert und widerrufen werden (Blacklist in DB)
 
 ## Edge Cases
-- E-Mail-Adresse bereits registriert → klare Fehlermeldung, kein doppeltes Konto
-- Einladungslink abgelaufen (> 7 Tage) → Nutzer sieht Hinweis, Admin kann neu einladen
-- Admin löscht eigenen Account → Warnung, Verein kann nicht ohne Admin existieren
-- Brute-Force Login → Rate-Limiting durch Supabase Auth
-- Nutzer versucht auf anderen Verein zuzugreifen → 403 Forbidden
+- E-Mail-Adresse bereits registriert → klare Fehlermeldung
+- Admin versucht sich selbst zu löschen → Warnung: Verein braucht mindestens einen Admin
+- QR-Code-Token abgelaufen → Nutzer sieht Hinweis, Admin kann neuen QR-Code drucken
+- QR-Code gescannt auf falschem Gerät (z.B. Privathandy) → funktioniert trotzdem, Session läuft nach 12h ab
+- Setup-User versucht Admin-Bereich aufzurufen → 403-Seite mit Erklärung
+- Brute-Force auf Login → Rate-Limiting durch Supabase Auth
+- E-Mail-Einladung für Setup-User abgelaufen (> 48h) → Admin kann neu einladen
 
 ## Technical Requirements
-- Supabase Auth (E-Mail + Passwort)
-- Row Level Security: Alle Tabellen filtern nach `organization_id`
-- Rollen: `admin`, `cashier`, `kitchen`, `waiter` (gespeichert in `profiles`-Tabelle)
-- Logo-Upload: Supabase Storage, max. 2 MB, JPG/PNG
-- Session-Management: Supabase Session via Cookie (SSR-kompatibel)
+- **Admin/Setup-User:** Supabase Auth (E-Mail + Passwort)
+- **Operative Nutzer:** Signed JWT in QR-Code URL, z.B. `/terminal/activate?token=<jwt>`
+- **Rollen:** `admin`, `setup_user`, `cashier`, `kitchen`, `waiter` — gespeichert in `profiles`-Tabelle
+- **Token-Blacklist:** Tabelle `revoked_tokens` mit `jti` (JWT ID) für Widerruf
+- **RLS:** Alle Tabellen filtern nach `organization_id`
+- **Logo-Upload:** Supabase Storage, max. 2 MB, JPG/PNG
+- **QR-Code-Generierung:** serverseitig (Next.js API Route), z.B. mit `qrcode`-Library
+- **QR-Code-Druck:** als Druckauftrag an Desktop-App (wie normale Bons)
 
 ---
 <!-- Sections below are added by subsequent skills -->
