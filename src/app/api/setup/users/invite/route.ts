@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
   // Magic Link Einladung senden
   const { data: inviteData, error: inviteError } = await adminSupabase.auth.admin.inviteUserByEmail(
     email,
-    { redirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/auth/callback?next=/auth/update-password` }
+    { redirectTo: `${new URL(request.url).origin}/auth/callback?next=/auth/update-password` }
   )
 
   if (inviteError) {
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
         if (existingProfile) {
           // User gehört zur eigenen Org → Passwort-Reset-Link senden (Re-Invite)
           const { error: resetError } = await adminSupabase.auth.resetPasswordForEmail(email, {
-            redirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/auth/callback?next=/auth/update-password`,
+            redirectTo: `${new URL(request.url).origin}/auth/callback?next=/auth/update-password`,
           })
           if (!resetError) {
             return NextResponse.json({ success: true, action: 'reset_sent' })

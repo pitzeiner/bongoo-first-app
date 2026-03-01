@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
     .setExpirationTime(expiresAt)
     .sign(secret)
 
-  const activationUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/terminal/activate?token=${jwt}`
+  const activationUrl = `${new URL(request.url).origin}/terminal/activate?token=${jwt}`
 
   return NextResponse.json({
     token: jwt,

@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
   }
 
   const redirectTo = ROLE_REDIRECT[tokenRecord.terminal_role] ?? '/terminal/expired'
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? ''
+  const appUrl = new URL(request.url).origin
 
   return NextResponse.json({ redirectTo: `${appUrl}${redirectTo}` })
 }
