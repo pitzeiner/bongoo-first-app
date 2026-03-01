@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
   // Magic Link Einladung senden
   const { data: inviteData, error: inviteError } = await adminSupabase.auth.admin.inviteUserByEmail(
     email,
-    { redirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/auth/callback` }
+    { redirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/auth/callback?next=/auth/update-password` }
   )
 
   if (inviteError) {

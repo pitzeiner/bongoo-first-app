@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Building2, Users, LogOut, QrCode, Menu } from 'lucide-react'
+import { Building2, Users, LogOut, QrCode, Menu, KeyRound } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
@@ -78,6 +78,14 @@ export function SetupSidebar({ role, displayName, userEmail }: SetupSidebarProps
             <p className="text-xs text-muted-foreground truncate">{userEmail}</p>
           </div>
         </div>
+        <Link
+          href="/auth/update-password"
+          onClick={() => setMobileOpen(false)}
+          className="flex items-center gap-2 px-2 py-1.5 mb-1 text-sm text-muted-foreground hover:text-foreground rounded-md hover:bg-gray-100 transition-colors"
+        >
+          <KeyRound className="h-4 w-4" />
+          Passwort ändern
+        </Link>
         <Button
           variant="ghost"
           size="sm"
