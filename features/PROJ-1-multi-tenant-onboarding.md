@@ -116,7 +116,78 @@ Das System kennt **zwei grundlegend verschiedene Auth-Mechanismen**:
 <!-- Sections below are added by subsequent skills -->
 
 ## Tech Design (Solution Architect)
-_To be added by /architecture_
+
+_Added by /architecture on 2026-03-01_
+
+### Routen-Struktur
+
+```
+/auth/register              Admin-Registrierung (E-Mail + Passwort)
+/auth/login                 Login-Seite (Admin + Setup-User)
+/auth/reset-password        Passwort-zurücksetzen
+/auth/callback              Supabase-Weiterleitungsziel
+
+/setup/profile              Vereinsprofil anlegen / bearbeiten (Admin only)
+/setup/users                Setup-User-Verwaltung (Admin only)
+/setup/users/invite         Neuen Setup-User einladen (Admin only)
+
+/terminal/activate          QR-Code-Einstiegspunkt (?token=<jwt>)
+/terminal/expired           Seite bei abgelaufenem / ungültigem Token
+```
+
+### UI-Komponentenstruktur
+
+```
+Auth-Bereich
++-- LoginPage (E-Mail, Passwort, "Passwort vergessen"-Link)
++-- RegisterPage (E-Mail, Passwort, Bestätigung, Hinweis-Banner)
++-- ResetPasswordPage (E-Mail-Feld)
+
+Setup-App (nach Login)
++-- Sidebar Navigation (rollenabhängig gerendert)
++-- OrganizationProfileForm (Name, Beschreibung, Logo-Upload)
++-- UserManagementTable (Liste, Sperren/Löschen-Aktionen)
++-- InviteUserDialog (Name, E-Mail, Absenden)
+
+QR-Code-Aktivierung
++-- TerminalActivatePage (Token validieren → Weiterleitung)
++-- TokenExpiredPage (Fehlermeldung + Hinweis für Admin)
+```
+
+### Datenmodell
+
+**`organizations`** — Der Verein
+- id, name (Pflicht), description, logo_url, created_at
+
+**`profiles`** — Benutzerprofil + Rolle
+- id (= Supabase Auth User ID), organization_id, role (admin | setup_user), display_name, status (active | suspended)
+
+**`terminal_tokens`** — QR-Code-Zugänge
+- id, organization_id, event_id, role (cashier | kitchen | bar | waiter), terminal_name, expires_at, is_revoked
+
+**`revoked_tokens`** — Token-Blacklist
+- jti (JWT ID), revoked_at
+
+**Supabase Storage Bucket `logos`** — Vereins-Logos (max. 2 MB, JPG/PNG)
+
+### Technische Entscheidungen
+
+| Entscheidung | Begründung |
+|---|---|
+| Supabase Auth für Admin/Setup-User | E-Mail-Bestätigung + Passwort-Reset out-of-the-box |
+| Eigene JWTs für QR-Codes | Operative Nutzer brauchen kein Supabase-Konto; Token trägt Rolle + Terminal-Info |
+| RLS auf allen Tabellen | Datentrennung zwischen Vereinen auf DB-Ebene erzwungen |
+| Token-Blacklist-Tabelle | Admin kann Terminal sofort sperren, ohne Ablaufzeit abwarten |
+| Next.js Middleware | Routenschutz vor jedem Seitenaufruf, Weiterleitung zu /auth/login |
+| Rollenbasierte Sidebar | Setup-User sieht nur erlaubte Bereiche, keine 403-Seiten im Normalbetrieb |
+
+### Neue Pakete
+
+| Paket | Zweck |
+|---|---|
+| `@supabase/ssr` | Supabase Auth mit Next.js App Router (Cookie-basierte Sessions) |
+| `jose` | JWT signieren + validieren (QR-Code-Tokens) |
+| `qrcode` | QR-Code als PNG generieren (serverseitig) |
 
 ## QA Test Results
 _To be added by /qa_
