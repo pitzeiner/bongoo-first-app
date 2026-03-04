@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { SignJWT } from 'jose'
+import QRCode from 'qrcode'
 import { createClient } from '@/lib/supabase-server'
+import { checkRateLimit } from '@/lib/rate-limit'
 
 const schema = z.object({
   terminalName: z.string().min(1).max(100),
@@ -33,6 +35,14 @@ export async function POST(request: NextRequest) {
 
   if (!profile || profile.status !== 'active' || !profile.organization_id) {
     return NextResponse.json({ error: 'Keine Berechtigung oder kein Vereinsprofil' }, { status: 403 })
+  }
+
+  // Rate Limit: max. 20 Token-Generierungen pro Stunde pro Organisation
+  if (!checkRateLimit(`tokens:${profile.organization_id}`, 20, 60 * 60 * 1000)) {
+    return NextResponse.json(
+      { error: 'Zu viele Anfragen. Bitte warten Sie kurz.' },
+      { status: 429 }
+    )
   }
 
   const body = await request.json().catch(() => null)
@@ -88,9 +98,13 @@ export async function POST(request: NextRequest) {
 
   const activationUrl = `${new URL(request.url).origin}/terminal/activate?token=${jwt}`
 
+  // QR-Code als Base64 Data-URL generieren
+  const qrDataUrl = await QRCode.toDataURL(activationUrl, { width: 300, margin: 2 })
+
   return NextResponse.json({
     token: jwt,
     activationUrl,
+    qrDataUrl,
     expiresAt: expiresAt.toISOString(),
     tokenId: tokenRecord.id,
   })

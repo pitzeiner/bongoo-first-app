@@ -1,12 +1,15 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import Link from 'next/link'
 import { toast } from 'sonner'
+import { AlertCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -33,8 +36,17 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>
 
-export default function LoginPage() {
+const ERROR_MESSAGES: Record<string, string> = {
+  account_suspended:
+    'Ihr Konto wurde gesperrt. Bitte wenden Sie sich an Ihren Administrator.',
+  auth_callback_error: 'Anmeldefehler aufgetreten. Bitte versuchen Sie es erneut.',
+}
+
+function LoginPageContent() {
   const [loading, setLoading] = useState(false)
+  const searchParams = useSearchParams()
+  const errorParam = searchParams.get('error')
+  const errorMessage = errorParam ? (ERROR_MESSAGES[errorParam] ?? 'Ein Fehler ist aufgetreten.') : null
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -76,6 +88,12 @@ export default function LoginPage() {
       </CardHeader>
 
       <CardContent>
+        {errorMessage && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{errorMessage}</AlertDescription>
+          </Alert>
+        )}
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
@@ -130,5 +148,13 @@ export default function LoginPage() {
         </p>
       </CardFooter>
     </Card>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginPageContent />
+    </Suspense>
   )
 }

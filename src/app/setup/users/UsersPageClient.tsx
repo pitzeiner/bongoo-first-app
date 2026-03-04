@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { UserManagementTable } from '@/components/setup/UserManagementTable'
 import { InviteUserDialog } from '@/components/setup/InviteUserDialog'
+import { QrCodeDialog } from '@/components/setup/QrCodeDialog'
 import { Card, CardContent } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Info } from 'lucide-react'
@@ -41,7 +42,10 @@ export function UsersPageClient({ users, currentUserId, isAdmin }: UsersPageClie
               : 'QR-Code-Zugänge für Terminals und Kellner'}
           </p>
         </div>
-        {isAdmin && <InviteUserDialog onInvited={handleRefresh} />}
+        <div className="flex gap-2">
+          <QrCodeDialog />
+          {isAdmin && <InviteUserDialog onInvited={handleRefresh} />}
+        </div>
       </div>
 
       {!isAdmin && (
