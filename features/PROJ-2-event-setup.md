@@ -108,7 +108,8 @@ Dialogs:
 | created_at / updated_at | Timestamp | Auto-managed |
 
 **Status rules:**
-- Transitions are one-way only: `draft → active → archived`
+- Allowed transitions: `draft → active`, `active → draft` (Deaktivieren), `draft/active → archived`
+- `archived` ist endgültig — kein Zurücksetzen möglich
 - Only one event per organization can be `active` at a time
 - Terminals (PROJ-4/5) check for an `active` event to connect
 - Duplication copies metadata only; articles + stations copied as stubs for future features
@@ -207,13 +208,13 @@ Dialogs:
 ### Edge Cases Status
 
 #### EC-1: Fest-Datum in der Vergangenheit beim Anlegen
-- [ ] **BUG-28:** No warning is displayed when selecting a past date. The spec says "Warnung, aber erlaubt (fuer nachtraegliche Eingabe)". The EventForm and Calendar component do not restrict or warn about past dates -- selection is allowed (which is correct), but there is no warning message shown to the user.
+- [x] **BUG-28 FIXED:** `EventForm` shows amber warning `"Hinweis: Das gewählte Datum liegt in der Vergangenheit."` when selected date < today (edit mode only, not in readOnly).
 
 #### EC-2: Aktivieren eines Fests, wenn bereits eines aktiv ist -- Bestaetigungsdialog
 - [x] **EventsTable** checks for an existing active event via `events.find(e => e.status === 'active')` and shows `ActivateConfirmDialog` when found
 - [x] **ActivateConfirmDialog** names the currently active event and explains it will be deactivated
 - [x] **Server-side RPC** atomically handles the swap in a single transaction
-- [ ] **BUG-29:** On the event detail page (`EventActionsPanel`), clicking "Fest aktivieren" always shows the ActivateConfirmDialog, even when NO other event is active. The dialog's `activeEventName` prop receives the CURRENT event's name (not the conflicting one), making the message confusing. It says "Das Fest [current event name] ist derzeit aktiv" which is misleading when the event is in draft status.
+- [x] **BUG-29 FIXED:** `EventDetailPage` fetches the actually active event (`.neq('id', id)`). `EventActionsPanel` only shows the dialog when `activeEventName !== null`; otherwise activates directly.
 
 #### EC-3: Fest mit aktiven Bestellungen deaktivieren -- Warnung
 - [ ] **BUG-30:** The `DeactivateWarningDialog` specified in the tech design is NOT implemented. Deactivating an active event (from both the list and detail page) happens without any warning about active orders. The spec requires a warning that active orders remain visible. This is partially acceptable since the orders feature (PROJ-5) does not exist yet, but the dialog component itself is missing.
@@ -260,10 +261,10 @@ Dialogs:
 
 #### SQL Injection / RPC Security
 - [x] **Supabase client handles parameterization** -- no raw SQL in application code
-- [ ] **BUG-33 (HIGH):** The `activate_event` RPC function is declared as `SECURITY DEFINER`, meaning it runs with the privileges of the function owner (typically the database owner/superuser), bypassing RLS entirely. Any authenticated user who knows an event UUID can call `supabase.rpc('activate_event', { target_event_id: '<any-event-uuid>' })` and activate ANY event in the database, regardless of organization. The API route does check org membership before calling the RPC, but the RPC itself has no internal authorization check for `organization_id` ownership. If the API check were bypassed (e.g., direct Supabase client call from browser using the anon key), this would allow cross-org event manipulation.
+- [x] **BUG-33 FIXED:** `activate_event` RPC umgestellt auf `SECURITY INVOKER` — läuft mit Rechten des Aufrufers, RLS-Policies greifen automatisch. Migration `fix_activate_event_security_invoker` deployed.
 
 #### Rate Limiting
-- [ ] **BUG-34:** None of the PROJ-2 API routes use the `checkRateLimit` function from `src/lib/rate-limit.ts`. An authenticated admin could send rapid requests to create, duplicate, activate, archive, or delete events without any throttling.
+- [x] **BUG-34 FIXED:** `checkRateLimit` auf allen 5 mutierenden Endpunkten (create, update, delete, activate, archive, duplicate).
 
 #### Sensitive Data Exposure
 - [x] **No secrets in client code:** All event operations use the user-scoped Supabase client
@@ -283,7 +284,7 @@ All components use standard React, shadcn/ui primitives, and Tailwind CSS. No br
 ### Responsive Testing (Code Review)
 
 - [x] **Mobile (375px):** EventForm uses `max-w-xl` with standard form layout -- responsive. Calendar Popover aligns to start.
-- [ ] **BUG-35:** The EventsTable renders a full-width HTML `<Table>` component with 5 columns (Name, Datum, Ort, Status, Actions). On 375px screens, this will likely overflow horizontally. No horizontal scroll wrapper (`overflow-x-auto`) is applied, and there is no responsive card layout for mobile. Same issue as BUG-23 from PROJ-1 (UserManagementTable).
+- [x] **BUG-35 FIXED:** `EventsTable` in `<div className="overflow-x-auto">` gewrappt — horizontales Scrollen auf 375px-Screens funktioniert.
 - [x] **Tablet (768px):** Layout works well -- sidebar switches from sheet to fixed, content area has sufficient width for the table.
 - [x] **Desktop (1440px):** Content constrained by `max-w-xl` on form pages; table stretches to fill available space.
 
@@ -332,14 +333,8 @@ All components use standard React, shadcn/ui primitives, and Tailwind CSS. No br
 #### BUG-31: INTENTIONAL -- setup_users can read events
 - **Note:** Reclassified as NOT A BUG after analysis. Setup users need event read access. No action needed.
 
-#### BUG-32: PATCH endpoint accepts empty update payload
-- **Severity:** Low
-- **Steps to Reproduce:**
-  1. Send `PATCH /api/setup/events/[id]` with body `{}`
-  2. Expected: Returns 400 (no fields to update)
-  3. Actual: Returns 200 success (Supabase runs a no-op UPDATE)
-- **Impact:** No data corruption, but unnecessarily triggers the `updated_at` timestamp update
-- **Priority:** Nice to have
+#### BUG-32: PATCH endpoint accepts empty update payload — **FIXED**
+- **Fix:** PATCH route prüft `Object.keys(parsed.data).length === 0` und antwortet mit 400.
 
 #### BUG-33: activate_event RPC uses SECURITY DEFINER without authorization check
 - **Severity:** High
@@ -369,16 +364,12 @@ All components use standard React, shadcn/ui primitives, and Tailwind CSS. No br
 - **Note:** Same pattern as BUG-23 from PROJ-1 (UserManagementTable).
 - **Priority:** Fix in next sprint
 
-#### BUG-36: Status transition allows active-to-draft (spec says no backsteps)
-- **Severity:** Medium
-- **Steps to Reproduce:**
-  1. Activate a draft event (status becomes active)
-  2. Click "Deaktivieren" on the active event
-  3. Expected: Based on the spec "draft -> active -> archived (keine Rueckschritte)", deactivation should not be possible -- only archiving
-  4. Actual: The `activate_event` RPC function (line 124) toggles an active event back to draft: `IF v_status = 'active' THEN UPDATE events SET status = 'draft'`. The UI also provides a "Deaktivieren (-> Entwurf)" button for active events.
-- **Impact:** This contradicts the spec requirement "Status-Uebergang: draft -> active -> archived (keine Rueckschritte)". However, the UI intentionally supports deactivation, and the User Story says "Fest aktivieren oder deaktivieren". This is a spec inconsistency.
-- **Note:** The spec text and user stories are contradictory. The user story says "aktivieren oder deaktivieren" which implies bidirectional transitions, but the technical requirements say "keine Rueckschritte" (no backsteps). The implementation follows the user story interpretation.
-- **Priority:** Clarify with product owner. If bidirectional is intended, update the spec. If one-way is intended, remove the deactivation feature.
+#### BUG-36: Status transition allows active-to-draft — **RESOLVED**
+- **Resolution:** Produktentscheidung: Bidirektionale Übergänge sind gewünscht (User Story: "aktivieren oder deaktivieren"). Spec wurde aktualisiert:
+  - `draft → active` (Aktivieren)
+  - `active → draft` (Deaktivieren — erlaubt, solange keine laufenden Bestellungen)
+  - `draft/active → archived` (endgültig, kein Zurücksetzen)
+  - Tech Design Sektion ebenfalls korrigiert.
 
 ---
 
@@ -418,9 +409,12 @@ All "fix before deployment" bugs were verified fixed in code:
 - **BUG-34 (Medium):** ALREADY FIXED — All 6 API routes have `checkRateLimit` calls
 - **BUG-32 (Low):** ALREADY FIXED — PATCH rejects empty update payloads with 400
 
-### Deferred Bugs (no blocking impact)
+### Post-Deployment Bug Fixes
+- **BUG-28 FIXED:** Vergangenheitsdatum-Warnung in EventForm (amber Hinweis)
+- **BUG-35 FIXED:** EventsTable horizontal scroll wrapper auf Mobile
+- **BUG-36 RESOLVED:** Spec aktualisiert — `active → draft` explizit erlaubt (Produktentscheidung)
+- **BUG-32 FIXED:** PATCH lehnt leeren Body mit 400 ab
+
+### Deferred Bugs (blocked by future features)
 - BUG-27: Article/station copy in duplicate → blocked by PROJ-3/4
-- BUG-28: Past date warning → low priority, fix in next sprint
 - BUG-30: DeactivateWarningDialog → blocked by PROJ-5
-- BUG-35: Mobile table overflow → low priority, fix in next sprint
-- BUG-36: Spec inconsistency on status transitions → clarify with product owner
