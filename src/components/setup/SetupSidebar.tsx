@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Building2, Users, LogOut, QrCode, Menu, KeyRound } from 'lucide-react'
+import { Building2, Users, LogOut, QrCode, Menu, KeyRound, CalendarDays } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
@@ -17,6 +17,7 @@ interface NavItem {
 
 const adminNavItems: NavItem[] = [
   { href: '/setup/profile', label: 'Vereinsprofil', icon: Building2 },
+  { href: '/setup/events', label: 'Veranstaltungen', icon: CalendarDays },
   { href: '/setup/users', label: 'Benutzer', icon: Users },
 ]
 
