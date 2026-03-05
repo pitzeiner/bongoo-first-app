@@ -13,7 +13,7 @@
 | ID | Feature | Status | Spec | Created |
 |----|---------|--------|------|---------|
 | PROJ-1 | Multi-Tenant Onboarding (Vereinsregistrierung & Auth) | In Review | [PROJ-1-multi-tenant-onboarding.md](PROJ-1-multi-tenant-onboarding.md) | 2026-03-01 |
-| PROJ-2 | Event Setup (Fest anlegen & konfigurieren) | In Review | [PROJ-2-event-setup.md](PROJ-2-event-setup.md) | 2026-03-01 |
+| PROJ-2 | Event Setup (Fest anlegen & konfigurieren) | Deployed | [PROJ-2-event-setup.md](PROJ-2-event-setup.md) | 2026-03-01 |
 | PROJ-3 | Artikel- & Kategorieverwaltung | Planned | [PROJ-3-artikel-kategorien.md](PROJ-3-artikel-kategorien.md) | 2026-03-01 |
 | PROJ-4 | Terminal- & Stationskonfiguration | Planned | [PROJ-4-terminal-stationskonfiguration.md](PROJ-4-terminal-stationskonfiguration.md) | 2026-03-01 |
 | PROJ-5 | Kassaterminal-App (Bestellaufnahme & Zahlung) | Planned | [PROJ-5-kassaterminal-app.md](PROJ-5-kassaterminal-app.md) | 2026-03-01 |

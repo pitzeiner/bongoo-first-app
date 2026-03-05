@@ -1,6 +1,6 @@
 # PROJ-2: Event Setup (Fest anlegen & konfigurieren)
 
-## Status: In Review
+## Status: Deployed
 **Created:** 2026-03-01
 **Last Updated:** 2026-03-05
 
@@ -406,4 +406,21 @@ All components use standard React, shadcn/ui primitives, and Tailwind CSS. No br
 - **Recommendation:** Fix BUG-33 (critical security) and BUG-29 (confusing UX) before deployment. Clarify BUG-36 with product owner. Add rate limiting (BUG-34) for defense in depth.
 
 ## Deployment
-_To be added by /deploy_
+
+**Deployed:** 2026-03-05
+**Commit:** `feat(PROJ-2): Event Setup - Fest anlegen & konfigurieren`
+**Tag:** v1.2.0-PROJ-2
+
+### Pre-Deployment Bug Resolution
+All "fix before deployment" bugs were verified fixed in code:
+- **BUG-33 (High):** FALSE POSITIVE — `activate_event` RPC confirmed `SECURITY INVOKER` (`prosecdef=false`), RLS applies correctly
+- **BUG-29 (Medium):** ALREADY FIXED — `EventActionsPanel` correctly checks `activeEventName` before showing dialog; parent page queries with `.neq('id', id)` to exclude current event
+- **BUG-34 (Medium):** ALREADY FIXED — All 6 API routes have `checkRateLimit` calls
+- **BUG-32 (Low):** ALREADY FIXED — PATCH rejects empty update payloads with 400
+
+### Deferred Bugs (no blocking impact)
+- BUG-27: Article/station copy in duplicate → blocked by PROJ-3/4
+- BUG-28: Past date warning → low priority, fix in next sprint
+- BUG-30: DeactivateWarningDialog → blocked by PROJ-5
+- BUG-35: Mobile table overflow → low priority, fix in next sprint
+- BUG-36: Spec inconsistency on status transitions → clarify with product owner
