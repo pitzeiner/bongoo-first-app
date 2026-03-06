@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase-server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { checkRateLimit } from '@/lib/rate-limit'
 
 const schema = z.object({
   displayName: z.string().min(1).max(100),
@@ -25,6 +26,14 @@ export async function POST(request: NextRequest) {
 
   if (!profile || profile.role !== 'admin' || profile.status !== 'active') {
     return NextResponse.json({ error: 'Keine Berechtigung' }, { status: 403 })
+  }
+
+  // Rate Limit: max. 10 Einladungen pro 10 Minuten pro Admin
+  if (!checkRateLimit(`invite:${user.id}`, 10, 10 * 60 * 1000)) {
+    return NextResponse.json(
+      { error: 'Zu viele Anfragen. Bitte warten Sie kurz.' },
+      { status: 429 }
+    )
   }
 
   if (!profile.organization_id) {
@@ -66,10 +75,12 @@ export async function POST(request: NextRequest) {
   if (inviteError) {
     if (inviteError.message.includes('already been registered')) {
       // Prüfen ob der bestehende User zur eigenen Organisation gehört
-      const { data: listData } = await adminSupabase.auth.admin.listUsers({ perPage: 1000 })
-      const existingUser = listData?.users.find(
-        (u) => u.email?.toLowerCase() === email.toLowerCase()
-      )
+      // Gezielter Lookup via SQL-Funktion statt listUsers({ perPage: 1000 })
+      const { data: existingUserId } = await adminSupabase.rpc('get_user_id_by_email', {
+        p_email: email.toLowerCase(),
+      })
+
+      const existingUser = existingUserId ? { id: existingUserId as string } : null
 
       if (existingUser) {
         // RLS-geschützte Abfrage: gibt nur Treffer zurück wenn User in eigener Org ist

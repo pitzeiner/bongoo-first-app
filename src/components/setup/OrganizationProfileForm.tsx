@@ -7,7 +7,6 @@ import { z } from 'zod'
 import { toast } from 'sonner'
 import { Upload, X } from 'lucide-react'
 import Image from 'next/image'
-import { createClient } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import {
@@ -98,25 +97,25 @@ export function OrganizationProfileForm({ initialData }: OrganizationProfileForm
     if (file) validateAndSetFile(file)
   }
 
-  async function uploadLogo(organizationId: string): Promise<string | null> {
+  async function uploadLogo(): Promise<string | null> {
     if (!logoFile) return initialData?.logo_url ?? null
 
-    const supabase = createClient()
-    const ext = logoFile.name.split('.').pop()
-    const path = `${organizationId}/logo.${ext}`
+    const formData = new FormData()
+    formData.append('file', logoFile)
 
-    const { error } = await supabase.storage.from('logos').upload(path, logoFile, {
-      upsert: true,
+    const response = await fetch('/api/setup/logo-upload', {
+      method: 'POST',
+      body: formData,
     })
 
-    if (error) {
-      toast.error('Logo konnte nicht hochgeladen werden: ' + error.message)
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}))
+      toast.error(data.error ?? 'Logo konnte nicht hochgeladen werden')
       return initialData?.logo_url ?? null
     }
 
-    const { data } = supabase.storage.from('logos').getPublicUrl(path)
-    // Timestamp verhindert CDN/Browser-Cache des alten Bildes
-    return `${data.publicUrl}?t=${Date.now()}`
+    const { url } = await response.json()
+    return url
   }
 
   async function onSubmit(values: FormValues) {
@@ -142,7 +141,7 @@ export function OrganizationProfileForm({ initialData }: OrganizationProfileForm
 
       // Logo hochladen und URL in DB speichern
       if (logoFile && organizationId) {
-        const logoUrl = await uploadLogo(organizationId)
+        const logoUrl = await uploadLogo()
         if (logoUrl) {
           await fetch('/api/setup/profile', {
             method: 'POST',
