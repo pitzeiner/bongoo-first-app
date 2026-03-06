@@ -75,5 +75,78 @@ export async function POST(request: NextRequest) {
     .single()
 
   if (error) return NextResponse.json({ error: 'Erstellen fehlgeschlagen' }, { status: 500 })
+
+  const newEventId = data.id
+
+  // Artikel-Kopier-Mechanismus: Priorität 1 → letztes Fest; Priorität 2 → Vereinsvorlagen
+  await copyProductsToEvent(supabase, profile.organization_id, newEventId)
+
   return NextResponse.json({ event: data }, { status: 201 })
+}
+
+async function copyProductsToEvent(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  organizationId: string,
+  newEventId: string
+) {
+  // Letztes abgeschlossenes oder aktives Fest (nicht das gerade erstellte Draft)
+  const { data: lastEvent } = await supabase
+    .from('events')
+    .select('id')
+    .eq('organization_id', organizationId)
+    .neq('id', newEventId)
+    .in('status', ['active', 'archived'])
+    .order('date', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (lastEvent) {
+    // Priorität 1: Artikel vom letzten Fest kopieren
+    const { data: sourceProducts } = await supabase
+      .from('products')
+      .select('*')
+      .eq('event_id', lastEvent.id)
+
+    if (sourceProducts && sourceProducts.length > 0) {
+      const copies = sourceProducts.map((p) => ({
+        event_id: newEventId,
+        template_id: p.template_id,
+        category_id: p.category_id,
+        name: p.name,
+        unit: p.unit,
+        price_cents: p.price_cents,
+        last_price_cents: p.price_cents, // Preis des letzten Fests als Referenz
+        station_id: p.station_id,
+        is_active: true,
+        display_order: p.display_order,
+        image_url: p.image_url,
+      }))
+      await supabase.from('products').insert(copies)
+    }
+    return
+  }
+
+  // Priorität 2: Fallback auf Vereinsvorlagen (kein vorheriges Fest)
+  const { data: templates } = await supabase
+    .from('product_templates')
+    .select('*')
+    .eq('organization_id', organizationId)
+    .order('display_order', { ascending: true })
+
+  if (templates && templates.length > 0) {
+    const copies = templates.map((t) => ({
+      event_id: newEventId,
+      template_id: t.id,
+      category_id: t.category_id,
+      name: t.name,
+      unit: t.unit,
+      price_cents: 0, // Preis muss manuell gesetzt werden
+      last_price_cents: null,
+      station_id: null, // Station muss manuell zugewiesen werden
+      is_active: true,
+      display_order: t.display_order,
+      image_url: t.image_url,
+    }))
+    await supabase.from('products').insert(copies)
+  }
 }

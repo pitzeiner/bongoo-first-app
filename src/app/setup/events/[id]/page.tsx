@@ -1,9 +1,12 @@
 import { redirect, notFound } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase-server'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { EventForm } from '@/components/setup/events/EventForm'
 import { EventStatusBadge } from '@/components/setup/events/EventStatusBadge'
 import { EventActionsPanel } from './EventActionsPanel'
+import { Package } from 'lucide-react'
 
 interface EventDetailPageProps {
   params: Promise<{ id: string }>
@@ -78,6 +81,26 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
               description: event.description ?? '',
             }}
           />
+        </CardContent>
+      </Card>
+
+      {/* Artikel-Verwaltung Link */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Package className="h-4 w-4" />
+            Artikel
+          </CardTitle>
+          <CardDescription>
+            Verwalte die Artikel, Preise und Stationszuweisungen fuer dieses Fest.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button asChild variant="outline">
+            <Link href={`/setup/events/${id}/articles`}>
+              Artikel verwalten
+            </Link>
+          </Button>
         </CardContent>
       </Card>
 

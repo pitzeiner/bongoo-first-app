@@ -60,5 +60,29 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     .single()
 
   if (error) return NextResponse.json({ error: 'Duplizieren fehlgeschlagen' }, { status: 500 })
+
+  // Artikel vom Quell-Fest ins neue Fest kopieren
+  const { data: sourceProducts } = await supabase
+    .from('products')
+    .select('*')
+    .eq('event_id', id)
+
+  if (sourceProducts && sourceProducts.length > 0) {
+    const copies = sourceProducts.map((p) => ({
+      event_id: copy.id,
+      template_id: p.template_id,
+      category_id: p.category_id,
+      name: p.name,
+      unit: p.unit,
+      price_cents: p.price_cents,
+      last_price_cents: p.price_cents,
+      station_id: p.station_id,
+      is_active: true,
+      display_order: p.display_order,
+      image_url: p.image_url,
+    }))
+    await supabase.from('products').insert(copies)
+  }
+
   return NextResponse.json({ event: copy }, { status: 201 })
 }
