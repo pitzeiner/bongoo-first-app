@@ -195,5 +195,15 @@ QR-Code-Aktivierung
 ## QA Test Results
 _To be added by /qa_
 
+### Known Issues / TODOs
+
+**TODO-1: Einladungsemail verweist auf Login-Seite statt Passwort-Setup-Seite**
+- **Severity:** Medium
+- **Description:** Wenn ein Admin einen neuen Setup-User einlaedt, verweist die Einladungsemail auf die Login-Seite (/auth/login) anstatt auf die Seite zum Setzen des Passworts (/auth/update-password oder Set-Password-Link). Der eingeladene User muss dadurch zuerst das Passwort manuell zuruecksetzen, bevor er sich einloggen kann.
+- **Expected:** Einladungsemail enthaelt einen Link direkt zur Passwort-Setup-Seite.
+- **Actual:** Einladungsemail verweist auf die Login-Seite.
+- **Priority:** Naechster Fix-Zyklus
+- **Status:** Offen
+
 ## Deployment
 _To be added by /deploy_
